@@ -41,8 +41,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  if (req.session.user) return res.redirect("/dashboard");
-  res.redirect("/login");
+    res.render("home", { title: "Welcome" });
 });
 
 app.use(authRoutes);

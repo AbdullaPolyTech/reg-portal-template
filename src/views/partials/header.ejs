@@ -31,6 +31,7 @@
 </header>
 <nav class="bg-white border-bottom">
   <div class="container py-2 d-flex gap-2">
+	<a class="btn btn-sm btn-outline-dark" href="/">Home</a>
     <% if (currentUser) { %>
       <% if (currentUser.role === "ADMIN") { %>
         <a class="btn btn-sm btn-outline-dark" href="/admin/applications">Applications</a>

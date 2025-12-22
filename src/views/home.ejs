@@ -1,0 +1,49 @@
+<%- include("./partials/header", { title: "Welcome" }) %>
+<%- include("./partials/alerts") %>
+
+<section class="py-4">
+  <div class="row align-items-center g-4">
+    <div class="col-12 col-lg-6">
+      <h1 class="display-6 fw-semibold mb-3">Registration Portal</h1>
+      <p class="lead text-secondary">
+        Submit and track your applications.
+      </p>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <% if (currentUser) { %>
+          <% if (currentUser.role === "ADMIN") { %>
+            <a class="btn btn-dark" href="/admin/applications">Review applications</a>
+          <% } else { %>
+            <a class="btn btn-dark" href="/dashboard">Go to dashboard</a>
+            <a class="btn btn-outline-secondary" href="/apply">Submit application</a>
+          <% } %>
+        <% } else { %>
+          <a class="btn btn-dark" href="/login">Login</a>
+          <a class="btn btn-outline-secondary" href="/register">Create account</a>
+        <% } %>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h2 class="h5 fw-semibold mb-3">What you can do</h2>
+          <ul class="list-unstyled mb-0">
+            <li class="d-flex gap-2 mb-2">
+              <span class="badge text-bg-primary">1</span>
+              <span>Apply and create an account.</span>
+            </li>
+            <li class="d-flex gap-2 mb-2">
+              <span class="badge text-bg-primary">2</span>
+              <span>Track status changes / review submissions.</span>
+            </li>
+            <li class="d-flex gap-2">
+              <span class="badge text-bg-primary">3</span>
+              <span>Follow up when needed.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include("./partials/footer") %>
