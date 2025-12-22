@@ -1,0 +1,21 @@
+<%- include("../partials/header", { title: "Dashboard" }) %>
+<%- include("../partials/alerts") %>
+
+<h1>Dashboard</h1>
+
+<% if (!application) { %>
+  <p>You have no application yet.</p>
+  <a class="btn" href="/apply">Submit application</a>
+<% } else { %>
+  <div class="card">
+    <h2>Your latest application</h2>
+    <p><b>Status:</b> <%= application.status %></p>
+    <p><b>Organization:</b> <%= application.organization || "-" %></p>
+    <p><b>Phone:</b> <%= application.phone || "-" %></p>
+    <p><b>Message:</b> <%= application.message || "-" %></p>
+    <p><b>Admin note:</b> <%= application.admin_note || "-" %></p>
+  </div>
+  <a class="btn" href="/apply">Submit another application</a>
+<% } %>
+
+<%- include("../partials/footer") %>

@@ -1,0 +1,29 @@
+<%- include("../partials/header", { title: "Admin - Application" }) %>
+<%- include("../partials/alerts") %>
+<h1>Application #<%= application.id %></h1>
+
+<div class="card">
+  <p><b>User:</b> <%= application.full_name %> (<%= application.email %>)</p>
+  <p><b>Status:</b> <%= application.status %></p>
+  <p><b>Organization:</b> <%= application.organization || "-" %></p>
+  <p><b>Phone:</b> <%= application.phone || "-" %></p>
+  <p><b>Message:</b> <%= application.message || "-" %></p>
+</div>
+
+<form method="post" action="/admin/applications/<%= application.id %>/status" class="card">
+  <label>Set status</label>
+  <select name="status">
+    <option value="PENDING" <%= application.status === "PENDING" ? "selected" : "" %>>PENDING</option>
+    <option value="APPROVED" <%= application.status === "APPROVED" ? "selected" : "" %>>APPROVED</option>
+    <option value="REJECTED" <%= application.status === "REJECTED" ? "selected" : "" %>>REJECTED</option>
+  </select>
+
+  <label>Admin note</label>
+  <textarea name="admin_note" rows="4"><%= application.admin_note || "" %></textarea>
+
+  <button type="submit">Save</button>
+</form>
+
+<p><a href="/admin/applications">← Back</a></p>
+
+<%- include("../partials/footer") %>

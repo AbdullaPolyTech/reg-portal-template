@@ -1,0 +1,20 @@
+<%- include("../partials/header", { title: "Apply" }) %>
+<%- include("../partials/alerts") %>
+
+<h1>Submit application</h1>
+
+<form method="post" action="/apply" class="card">
+  <label>Organization</label>
+  <input name="organization" placeholder="e.g., Stable Name / Company" />
+
+  <label>Phone</label>
+  <input name="phone" placeholder="+973..." />
+
+  <label>Message</label>
+  <textarea name="message" rows="5" placeholder="Tell us about your request..."></textarea>
+
+  <button type="submit">Submit</button>
+</form>
+
+<%- include("../partials/footer") %>
+

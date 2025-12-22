@@ -1,0 +1,27 @@
+<%- include("../partials/header", { title: "Admin - Applications" }) %>
+<%- include("../partials/alerts") %>
+<h1>All applications</h1>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>User</th><th>Email</th><th>Status</th><th>Created</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% applications.forEach(a => { %>
+        <tr>
+          <td><%= a.id %></td>
+          <td><%= a.full_name %></td>
+          <td><%= a.email %></td>
+          <td><%= a.status %></td>
+          <td><%= a.created_at %></td>
+          <td><a href="/admin/applications/<%= a.id %>">View</a></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include("../partials/footer") %>
