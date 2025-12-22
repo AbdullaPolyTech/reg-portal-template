@@ -1,27 +1,44 @@
 <%- include("../partials/header", { title: "Admin - Applications" }) %>
 <%- include("../partials/alerts") %>
-<h1>All applications</h1>
 
-<div class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th><th>User</th><th>Email</th><th>Status</th><th>Created</th><th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% applications.forEach(a => { %>
-        <tr>
-          <td><%= a.id %></td>
-          <td><%= a.full_name %></td>
-          <td><%= a.email %></td>
-          <td><%= a.status %></td>
-          <td><%= a.created_at %></td>
-          <td><a href="/admin/applications/<%= a.id %>">View</a></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+<% const statusClasses = { APPROVED: "success", REJECTED: "danger", PENDING: "warning" }; %>
+<h1 class="mb-3">All applications</h1>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">User</th>
+            <th scope="col">Email</th>
+            <th scope="col">Status</th>
+            <th scope="col">Created</th>
+            <th scope="col" class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% applications.forEach(a => { %>
+            <tr>
+              <td class="fw-semibold"><%= a.id %></td>
+              <td><%= a.full_name %></td>
+              <td><%= a.email %></td>
+              <td>
+                <span class="badge text-bg-<%= statusClasses[a.status] || "secondary" %>">
+                  <%= a.status %>
+                </span>
+              </td>
+              <td class="text-nowrap"><%= a.created_at %></td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="/admin/applications/<%= a.id %>">View</a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <%- include("../partials/footer") %>

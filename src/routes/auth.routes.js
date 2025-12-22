@@ -51,14 +51,23 @@ router.post("/login", async (req, res) => {
   }
 
   req.session.user = { id: user.id, full_name: user.full_name, email: user.email, role: user.role };
-
+  req.session.flash = {
+    type: "success",
+    message: `Welcome back, ${user.full_name}!`
+  };
+  
   if (user.role === "ADMIN") return res.redirect("/admin/applications");
   res.redirect("/dashboard");
 });
 
 
 router.post("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/login"));
+  //req.session.destroy(() => res.redirect("/login"));
+    req.session.regenerate((err) => {
+    if (err) return res.redirect("/login");
+    req.session.flash = { type: "success", message: "Logged out successfully." };
+    res.redirect("/login");
+  });
 });
 
 module.exports = router;
