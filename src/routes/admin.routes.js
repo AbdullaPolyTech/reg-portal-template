@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const db = require("../db/database");
 const { requireAdmin } = require("../middleware/auth");
 
@@ -25,7 +26,27 @@ router.get("/admin/applications/:id", requireAdmin, (req, res) => {
   `).get(id);
 
   if (!row) return res.status(404).send("Not found");
-  res.render("admin/application_detail", { application: row });
+    const files = db
+    .prepare("SELECT * FROM application_files WHERE application_id = ? ORDER BY created_at DESC")
+    .all(id);
+  res.render("admin/application_detail", { application: row, files });
+});
+
+router.get("/admin/files/:id", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const file = db.prepare(`
+    SELECT af.*
+    FROM application_files af
+    WHERE af.id = ?
+  `).get(id);
+
+  if (!file) return res.status(404).send("Not found");
+
+  const resolvedPath = path.isAbsolute(file.storage_path)
+    ? file.storage_path
+    : path.join(process.cwd(), file.storage_path);
+
+  return res.download(resolvedPath, file.original_name);
 });
 
 router.post("/admin/applications/:id/status", requireAdmin, (req, res) => {

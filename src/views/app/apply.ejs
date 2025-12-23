@@ -3,7 +3,7 @@
 
 <h1>Submit application</h1>
 
-<form method="post" action="/apply" class="card">
+<form method="post" action="/apply" class="card" enctype="multipart/form-data">
   <label>Organization</label>
   <input name="organization" placeholder="e.g., Stable Name / Company" />
 
@@ -12,9 +12,11 @@
 
   <label>Message</label>
   <textarea name="message" rows="5" placeholder="Tell us about your request..."></textarea>
+  
+  <label>Supporting documents (up to 5 files, 5MB each)</label>
+  <input type="file" name="documents" multiple accept=".pdf,.doc,.docx,image/*" />
 
   <button type="submit">Submit</button>
 </form>
 
 <%- include("../partials/footer") %>
-

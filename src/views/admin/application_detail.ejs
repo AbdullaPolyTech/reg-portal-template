@@ -41,6 +41,27 @@
   </div>
 </div>
 
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Uploaded files</h2>
+    <% if (files && files.length) { %>
+      <ul class="list-group list-group-flush">
+        <% files.forEach((file) => { %>
+          <li class="list-group-item d-flex align-items-center justify-content-between">
+            <div>
+              <div class="fw-semibold"><%= file.original_name %></div>
+              <div class="text-secondary small"><%= file.mime_type %> • <%= (file.size / 1024 / 1024).toFixed(2) %> MB</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/admin/files/<%= file.id %>">Download</a>
+          </li>
+        <% }) %>
+      </ul>
+    <% } else { %>
+      <div class="text-secondary">No files uploaded.</div>
+    <% } %>
+  </div>
+</div>
+
   <form method="post" action="/admin/applications/<%= application.id %>/status" class="card shadow-sm">
   <div class="card-body">
     <h2 class="h5 mb-3">Update status</h2>
