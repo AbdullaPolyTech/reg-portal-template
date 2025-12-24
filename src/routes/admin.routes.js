@@ -9,7 +9,45 @@ const router = express.Router();
 
 router.get("/admin/applications", requireAdmin, (req, res) => {
   const limit = 10;
-  const total = db.prepare("SELECT COUNT(*) as total FROM applications").get().total;
+  const search = (req.query.search || "").trim();
+  const status = (req.query.status || "ALL").trim().toUpperCase();
+  const sort = (req.query.sort || "latest").trim().toLowerCase();
+
+  const whereClauses = [];
+  const params = [];
+
+  if (search) {
+    whereClauses.push("(u.full_name LIKE ? OR u.email LIKE ? OR a.organization LIKE ?)");
+    const likeValue = `%${search}%`;
+    params.push(likeValue, likeValue, likeValue);
+  }
+
+  if (["APPROVED", "REJECTED", "PENDING"].includes(status)) {
+    whereClauses.push("a.status = ?");
+    params.push(status);
+  }
+
+  let orderBy = "a.created_at DESC";
+  if (sort === "oldest") {
+    orderBy = "a.created_at ASC";
+  } else if (sort === "name") {
+    orderBy = "u.full_name ASC";
+  } else if (sort === "status") {
+    orderBy = "a.status ASC, a.created_at DESC";
+  }
+
+  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+  const total = db
+    .prepare(
+      `
+      SELECT COUNT(*) as total
+      FROM applications a
+      JOIN users u ON u.id = a.user_id
+      ${whereSql}
+    `
+    )
+    .get(...params).total;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const requestedPage = Number.parseInt(req.query.page, 10) || 1;
   const page = Math.min(Math.max(requestedPage, 1), totalPages);
@@ -19,17 +57,29 @@ router.get("/admin/applications", requireAdmin, (req, res) => {
       SELECT a.*, u.full_name, u.email
       FROM applications a
       JOIN users u ON u.id = a.user_id
-      ORDER BY a.created_at DESC
+      ${whereSql}
+      ORDER BY ${orderBy}
       LIMIT ? OFFSET ?
     `)
-    .all(limit, offset);
+    .all(...params, limit, offset);
+
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.set("search", search);
+  if (status && status !== "ALL") queryParams.set("status", status);
+  if (sort && sort !== "latest") queryParams.set("sort", sort);
 
   res.render("admin/applications", {
     applications: rows,
+	filters: {
+      search,
+      status,
+      sort,
+    },
     pagination: {
       currentPage: page,
       totalPages,
       basePath: "/admin/applications",
+	  queryString: queryParams.toString(),
     },
   });
 });
@@ -95,17 +145,55 @@ router.get("/admin/users/new", requireAdmin, (req, res) => {
 });
 
 router.get("/admin/users", requireAdmin, (req, res) => {
+  const search = (req.query.search || "").trim();
+  const role = (req.query.role || "ALL").trim().toUpperCase();
+  const sort = (req.query.sort || "latest").trim().toLowerCase();
+
+  const whereClauses = [];
+  const params = [];
+
+  if (search) {
+    whereClauses.push("(u.full_name LIKE ? OR u.email LIKE ?)");
+    const likeValue = `%${search}%`;
+    params.push(likeValue, likeValue);
+  }
+
+  if (["USER", "ADMIN"].includes(role)) {
+    whereClauses.push("u.role = ?");
+    params.push(role);
+  }
+
+  let orderBy = "u.created_at DESC";
+  if (sort === "oldest") {
+    orderBy = "u.created_at ASC";
+  } else if (sort === "name") {
+    orderBy = "u.full_name ASC";
+  } else if (sort === "applications") {
+    orderBy = "application_count DESC";
+  }
+
+  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+  
   const users = db
     .prepare(`
       SELECT u.*, COUNT(a.id) as application_count
       FROM users u
       LEFT JOIN applications a ON a.user_id = u.id
+	  ${whereSql}
       GROUP BY u.id
-      ORDER BY u.created_at DESC
-    `)
-    .all();
+      ORDER BY ${orderBy}
+    `
+    )
+    .all(...params);
 
-  res.render("admin/users", { users });
+  res.render("admin/users", {
+    users,
+    filters: {
+      search,
+      role,
+      sort,
+    },
+  });
 });
 
 router.post("/admin/users", requireAdmin, async (req, res) => {
