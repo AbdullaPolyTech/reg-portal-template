@@ -12,6 +12,7 @@
         <% if (currentUser) { %>
           <% if (currentUser.role === "ADMIN") { %>
             <a class="btn btn-dark" href="/admin/applications">Review applications</a>
+			<a class="btn btn-outline-secondary" href="/admin/users">Manage users</a>
           <% } else { %>
             <a class="btn btn-dark" href="/dashboard">Go to dashboard</a>
             <a class="btn btn-outline-secondary" href="/apply">Submit application</a>

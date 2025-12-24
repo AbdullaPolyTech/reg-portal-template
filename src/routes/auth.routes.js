@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const db = require("../db/database");
+const { logAudit } = require("../db/audit");
 
 const router = express.Router();
 
@@ -30,6 +31,13 @@ router.post("/register", async (req, res) => {
     .run(full_name, email, password_hash);
 
   req.session.user = { id: result.lastInsertRowid, full_name, email, role: "USER" };
+  logAudit({
+    actorUserId: result.lastInsertRowid,
+    action: "USER_REGISTERED",
+    entityType: "USER",
+    entityId: result.lastInsertRowid,
+    metadata: { email }
+  });
   req.session.flash = { type: "success", message: "Account created successfully." };
   res.redirect("/dashboard");
 });

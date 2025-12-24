@@ -3,6 +3,7 @@ const path = require("path");
 const multer = require("multer");
 const db = require("../db/database");
 const { requireAuth } = require("../middleware/auth");
+const { logAudit } = require("../db/audit");
 const { upload } = require("../middleware/upload");
 
 const router = express.Router();
@@ -78,7 +79,16 @@ router.post("/apply", requireAuth, (req, res) => {
         );
       }
     }
+	
+	logAudit({
+      actorUserId: userId,
+      action: "APPLICATION_SUBMITTED",
+      entityType: "APPLICATION",
+      entityId: result.lastInsertRowid,
+      metadata: { fileCount: files.length }
+    });
 
+	req.session.flash = { type: "success", message: "Application submitted successfully." };
     return res.redirect("/dashboard");
   });
 });

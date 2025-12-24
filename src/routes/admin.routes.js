@@ -3,6 +3,7 @@ const path = require("path");
 const bcrypt = require("bcrypt");
 const db = require("../db/database");
 const { requireAdmin } = require("../middleware/auth");
+const { logAudit } = require("../db/audit");
 
 const router = express.Router();
 
@@ -33,6 +34,46 @@ router.get("/admin/applications", requireAdmin, (req, res) => {
   });
 });
 
+router.get("/admin/audit-logs", requireAdmin, (req, res) => {
+  const limit = 20;
+  const total = db.prepare("SELECT COUNT(*) as total FROM audit_logs").get().total;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const requestedPage = Number.parseInt(req.query.page, 10) || 1;
+  const page = Math.min(Math.max(requestedPage, 1), totalPages);
+  const offset = (page - 1) * limit;
+  const rows = db
+    .prepare(
+      `
+      SELECT al.*, u.full_name, u.email
+      FROM audit_logs al
+      LEFT JOIN users u ON u.id = al.actor_user_id
+      ORDER BY al.created_at DESC
+      LIMIT ? OFFSET ?
+    `
+    )
+    .all(limit, offset)
+    .map((row) => {
+      let metadata = null;
+      if (row.metadata) {
+        try {
+          metadata = JSON.parse(row.metadata);
+        } catch (error) {
+          metadata = row.metadata;
+        }
+      }
+      return { ...row, metadata };
+    });
+
+  res.render("admin/audit_logs", {
+    logs: rows,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      basePath: "/admin/audit-logs",
+    },
+  });
+});
+
 router.get("/admin/applications/:id", requireAdmin, (req, res) => {
   const id = Number(req.params.id);
   const row = db.prepare(`
@@ -51,6 +92,20 @@ router.get("/admin/applications/:id", requireAdmin, (req, res) => {
 
 router.get("/admin/users/new", requireAdmin, (req, res) => {
   res.render("admin/new_user", { title: "Admin - Create User" });
+});
+
+router.get("/admin/users", requireAdmin, (req, res) => {
+  const users = db
+    .prepare(`
+      SELECT u.*, COUNT(a.id) as application_count
+      FROM users u
+      LEFT JOIN applications a ON a.user_id = u.id
+      GROUP BY u.id
+      ORDER BY u.created_at DESC
+    `)
+    .all();
+
+  res.render("admin/users", { users });
 });
 
 router.post("/admin/users", requireAdmin, async (req, res) => {
@@ -77,11 +132,85 @@ router.post("/admin/users", requireAdmin, async (req, res) => {
 
   const password_hash = await bcrypt.hash(password, 12);
 
-  db.prepare("INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)")
+  const result = db
+    .prepare("INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)")
     .run(full_name, email, password_hash, role);
+	
+  logAudit({
+	actorUserId: req.session.user.id,
+	action: "USER_CREATED",
+	entityType: "USER",
+	entityId: result.lastInsertRowid,
+	metadata: { email, role }
+  });
 
   req.session.flash = { type: "success", message: "User created successfully." };
-  return res.redirect("/admin/users/new");
+  return res.redirect("/admin/users");
+});
+
+router.post("/admin/users/:id/delete", requireAdmin, (req, res) => {
+  const targetId = Number(req.params.id);
+
+  if (!Number.isInteger(targetId)) {
+    return res.status(400).send("Invalid user id");
+  }
+
+  if (targetId === req.session.user.id) {
+    req.session.flash = { type: "danger", message: "You cannot delete your own account." };
+    return res.redirect("/admin/users");
+  }
+
+  const targetUser = db.prepare("SELECT id, email, role FROM users WHERE id = ?").get(targetId);
+  if (!targetUser) {
+    return res.status(404).send("User not found");
+  }
+
+  db.prepare("DELETE FROM users WHERE id = ?").run(targetId);
+
+  logAudit({
+    actorUserId: req.session.user.id,
+    action: "USER_DELETED",
+    entityType: "USER",
+    entityId: targetId,
+    metadata: { email: targetUser.email, role: targetUser.role }
+  });
+
+  req.session.flash = { type: "success", message: "User deleted successfully." };
+  return res.redirect("/admin/users");
+});
+
+router.post("/admin/users/:id/role", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const role = (req.body.role || "").trim().toUpperCase();
+  if (!["USER", "ADMIN"].includes(role)) {
+    req.session.flash = { type: "danger", message: "Invalid role selected." };
+    return res.redirect("/admin/users");
+  }
+  if (req.session.user && req.session.user.id === id && role !== "ADMIN") {
+    req.session.flash = { type: "danger", message: "You cannot remove your own admin access." };
+    return res.redirect("/admin/users");
+  }
+
+  db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, id);
+  req.session.flash = { type: "success", message: "User role updated." };
+  return res.redirect("/admin/users");
+});
+
+router.post("/admin/users/:id/delete", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  if (req.session.user && req.session.user.id === id) {
+    req.session.flash = { type: "danger", message: "You cannot delete your own account." };
+    return res.redirect("/admin/users");
+  }
+
+  const result = db.prepare("DELETE FROM users WHERE id = ?").run(id);
+  if (!result.changes) {
+    req.session.flash = { type: "danger", message: "User not found." };
+    return res.redirect("/admin/users");
+  }
+
+  req.session.flash = { type: "success", message: "User removed." };
+  return res.redirect("/admin/users");
 });
 
 router.get("/admin/files/:id", requireAdmin, (req, res) => {
@@ -108,11 +237,27 @@ router.post("/admin/applications/:id/status", requireAdmin, (req, res) => {
   if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
     return res.status(400).send("Invalid status");
   }
+  
+  const existing = db
+    .prepare("SELECT id, status, user_id FROM applications WHERE id = ?")
+    .get(id);
+  if (!existing) {
+    return res.status(404).send("Not found");
+  }
 
   db.prepare("UPDATE applications SET status = ?, admin_note = ? WHERE id = ?")
     .run(status, admin_note || null, id);
+	
+  logAudit({
+    actorUserId: req.session.user.id,
+    action: "APPLICATION_STATUS_UPDATED",
+    entityType: "APPLICATION",
+    entityId: id,
+    metadata: { from: existing.status, to: status, targetUserId: existing.user_id }
+  });
 
-  res.redirect(`/admin/applications/${id}`);
+  req.session.flash = { type: "success", message: "Application status updated." };
+  res.redirect("/admin/applications");
 });
 
 module.exports = router;
