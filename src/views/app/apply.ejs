@@ -7,6 +7,7 @@
 </div>
 
 <form method="post" action="/apply" class="card shadow-sm" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="card-body">
     <div class="row g-3">
       <div class="col-12 col-md-6">

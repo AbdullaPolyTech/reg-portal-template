@@ -13,6 +13,7 @@
         <div class="user">
           <span><%= currentUser.full_name %> (<%= currentUser.role %>)</span>
           <form action="/logout" method="post" style="display:inline;">
+		    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button class="linkbtn" type="submit">Logout</button>
           </form>
         </div>

@@ -4,6 +4,9 @@ require("dotenv").config();
 
 const session = require("express-session");
 const SQLiteStore = require("connect-sqlite3")(session);
+const crypto = require("crypto");
+// CSRF protection is implemented manually with session based synchronizer tokens
+// same pattern as csurf but without extra dependency
 
 const authRoutes = require("./routes/auth.routes");
 const applicationRoutes = require("./routes/application.routes");
@@ -23,7 +26,11 @@ app.use(
     secret: process.env.SESSION_SECRET || "dev_secret_change_me",
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true }
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
+    }
   })
 );
 
@@ -38,6 +45,26 @@ app.use((req, res, next) => {
   res.locals.flash = req.session.flash || null;
   delete req.session.flash;
   next();
+});
+
+// --------------------
+// CSRF Protection
+// --------------------
+
+app.use((req, res, next) => {
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(32).toString("hex");
+  }
+  res.locals.csrfToken = req.session.csrfToken;
+  next();
+});
+
+app.use((req, res, next) => {
+  const csrfUnsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+  if (!csrfUnsafeMethods.has(req.method)) return next();
+  if (req.body?._csrf === req.session.csrfToken) return next();
+  req.session.flash = { type: "danger", message: "Invalid CSRF token. Please try again." };
+  res.redirect(req.get("referer") || "/");
 });
 
 app.get("/", (req, res) => {

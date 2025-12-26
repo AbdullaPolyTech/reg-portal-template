@@ -63,6 +63,7 @@
 </div>
 
   <form method="post" action="/admin/applications/<%= application.id %>/status" class="card shadow-sm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="card-body">
     <h2 class="h5 mb-3">Update status</h2>
     <div class="row g-3">

@@ -21,6 +21,7 @@
       <div class="text-secondary small">
         <span class="me-2"><%= currentUser.full_name %> (<%= currentUser.role %>)</span>
         <form action="/logout" method="post" class="d-inline">
+		  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <button class="btn btn-outline-dark btn-sm" type="submit">Logout</button>
         </form>
       </div>

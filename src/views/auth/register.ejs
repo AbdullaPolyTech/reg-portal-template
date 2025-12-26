@@ -8,6 +8,7 @@
         <h1 class="h3 mb-3">Create account</h1>
 
         <form method="post" action="/register">
+		  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <label class="form-label">Full Name</label>
           <input class="form-control mb-3" name="full_name" required />
 
