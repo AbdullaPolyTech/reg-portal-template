@@ -5,7 +5,7 @@ A registration portal template with role-based access, file uploads, and admin w
 ## Features
 
 **User** 
-- Account registeration/login with validation
+- Account registration/login with validation
 - Session authentication with SQLite backed sessions
 - Submit applications and track them
 - Upload files/documents with limitations
@@ -17,10 +17,11 @@ A registration portal template with role-based access, file uploads, and admin w
 - Audit logging for actions (user create/delete, application status change, submissions)
 
 **Security**
-- CSRF protection via session synchronizer token
-- Rate limiting for login and registeration/login
-- Bcrypt password hashing
-- Email and full-name validation- Upload validation (file type allowlist + size limits)
+- Session cookies: HttpOnly, SameSite=Lax
+- CSRF: synchronizer token pattern (session token + hidden form field validation)
+- Rate limiting: login and registration
+- Pssword hhasing: bcrypt
+- Upload validation: file type allowlist + size limits
 
 ## Tech Stack
 
@@ -48,13 +49,13 @@ Running the seed script creates an admin account if it doesn't exist:
 Email: `admin@local.test`
 Pass: `Admin123!`
 
-Change these after first login
+**Change/delete these after first login for actual deployment.**
 
 ## Env variables
 
-`PORT` Server port: 3000
-`Session_SECRET` Session signing secret: none (required)
-`DB_PATH` SQLite db path: `./data/app.db`
+- `PORT` (default: 3000)
+- `SESSION_SECRET` (required)
+- `DB_PATH` (default: `./data/app.db`)
 
 ## Upload configs
 
