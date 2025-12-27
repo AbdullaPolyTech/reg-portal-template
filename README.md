@@ -20,7 +20,7 @@ A registration portal template with role-based access, file uploads, and admin w
 - Session cookies: HttpOnly, SameSite=Lax
 - CSRF: synchronizer token pattern (session token + hidden form field validation)
 - Rate limiting: login and registration
-- Pssword hhasing: bcrypt
+- Pssword hashing: bcrypt
 - Upload validation: file type allowlist + size limits
 
 ## Tech Stack
